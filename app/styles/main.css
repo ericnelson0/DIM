@@ -43,6 +43,12 @@
   -ms-user-select: none;
   user-select: none;
 }
+#actions{
+  margin-top:1px;  
+}
+#actions .fa{
+ font-size:20px; 
+}
 #actions .fa:hover {
   color: #E8A534;
   cursor: pointer;

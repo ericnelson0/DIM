@@ -157,7 +157,8 @@
       'locked':       ['locked'],
       'unlocked':     ['unlocked'],
       'stackable':    ['stackable'],
-      'weaponClass':  ["pulserifle", "scoutrifle", "handcannon", "autorifle", "primaryweaponengram", "sniperrifle", "shotgun", "fusionrifle", "specialweaponengram", "rocketlauncher", "machinegun", "heavyweaponengram", "sidearm"]
+      'weaponClass':  ["pulserifle", "scoutrifle", "handcannon", "autorifle", "primaryweaponengram", "sniperrifle", "shotgun", "fusionrifle", "specialweaponengram", "rocketlauncher", "machinegun", "heavyweaponengram", "sidearm"],
+      'year':         ['year1', 'year2']
     };
 
     // Cache for searches against filterTrans. Somewhat noticebly speeds up the lookup on my older Mac, YMMV. Helps
@@ -249,10 +250,10 @@
       'weaponClass': function(predicate, item) {
         return predicate.toLowerCase().replace(/\s/g, '') == item.weaponClass;
       },
-      'keyword': function(predicate, item){
+      'keyword': function(predicate, item) {
         return !!~item.name.toLowerCase().indexOf(predicate);
       },
-      'light': function(predicate, item){
+      'light': function(predicate, item) {
         if (predicate.length === 0 || item.primStat == undefined) return false;
 
         var operands = ['<=','>=','=','>','<'];
@@ -288,6 +289,15 @@
             break;
         }
         return result;
+      },
+      'year': function(predicate, item) {
+        if (predicate === 'year1') {
+          return item.year === 1;
+        } else if (predicate === 'year2') {
+          return item.year === 2;
+        } else {
+          return false;
+        }
       }
     };
   }

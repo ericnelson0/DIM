@@ -21,7 +21,7 @@
       },
       template: [
         '<div ui-draggable="{{ ::vm.draggable }}" id="{{ ::vm.item.index }}" drag-channel="{{ ::vm.dragChannel }}" ',
-        '  title="{{ vm.item.primStat.value + \' \' + vm.item.name }}" ',
+        '  title="{{vm.item.primStat.value}} {{::vm.item.name}}" ',
         '  drag="::vm.item.index" ng-class="vm.itemClassNames">',
         '  <div ui-draggable="false" class="img" style="background-image: url(\'http://www.bungie.net{{:: vm.item.icon }}\');" ng-click="vm.clicked(vm.item, $event)">',
         '    <div ui-draggable="false" ng-class="vm.badgeClassNames" ng-if="vm.showBadge">{{ vm.badgeCount }}</div>',
