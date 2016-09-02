@@ -8,6 +8,7 @@
 
   function StoreService($rootScope, $q, dimBungieService, dimPlatformService, dimSettingsService, dimCategory, dimItemDefinitions, dimVendorDefinitions, dimBucketService, dimStatDefinitions, dimObjectiveDefinitions, dimTalentDefinitions, dimSandboxPerkDefinitions, dimYearsDefinitions, dimProgressionDefinitions, dimRecordsDefinitions, dimInfoService, SyncService, loadingTracker) {
     var _stores = [];
+    var _infusions = [];
     var _progressionDefs = {};
     let _recordsDefs = {};
     var _buckets = {};
@@ -195,7 +196,7 @@
       const includeVendors = !_stores.length || _.any(_stores, (store) => store.minRefreshDate < currDate);
 
       // Save a snapshot of all the items before we update
-      const previousItems = buildItemSet(_stores);
+      const previousItems = buildItemMap(_stores);
       const firstLoad = (previousItems.size === 0);
 
       function fakeItemId(item) {
@@ -591,6 +592,14 @@
         createdItem.isNew = dimSettingsService.showNewItems && isItemNew(createdItem.id, previousItems, newItems);
       } catch (e) {
         console.error("Error determining new-ness of " + createdItem.name, item, itemDef, e);
+      }
+
+      try {
+        if (dimSettingsService.trackInfusion && createdItem.isNew === false && lightLevelChanged(createdItem, previousItems)) {
+          _infusions
+        }
+      } catch (e) {
+        console.error("Error determining LL difference of " + createdItem.name, item, itemDef, e);
       }
 
       try {
@@ -1108,15 +1117,30 @@
     }
 
     /** New Item Tracking **/
+    function getStats(item) {
+      return {
+        intBase: item.stats[0].base,
+        intBonus: item.stats[0].bonus,
+        disBase: item.stats[1].base,
+        disBonus: item.stats[1].bonus,
+        strBase: item.stats[2].base,
+        strBonus: item.stats[2].bonus,
+      }
+    }
 
-    function buildItemSet(stores) {
-      var itemSet = new Set();
+    function buildItemMap(stores) {
+      var itemMap = new Map();
       stores.forEach((store) => {
         store.items.forEach((item) => {
-          itemSet.add(item.id);
+          // has defense hash
+          if (item.primStat && item.primStat.statHash === 3897883278) {
+            var statsObj = getStats(item);
+            statsObj.id = item.id;
+            itemMap.set(statsObj);
+          }
         });
       });
-      return itemSet;
+      return itemMap;
     }
 
     // Should this item display as new? Note the check for previousItems size, so that
@@ -1135,6 +1159,11 @@
         }
       }
       return isNew;
+    }
+
+    function lightLevelChanged(createdItem, previousItems) {
+      var prev = _.findWhere(previousItems, {id: createItem.id});
+      return prev.primStat.value !== createItem.primStat.value;
     }
 
     function dropNewItem(item) {
