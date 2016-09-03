@@ -138,6 +138,7 @@
       getVault: getStore.bind(null, 'vault'),
       updateCharacters: updateCharacters,
       clearNewItems: clearNewItems,
+      clearInfusions: clearInfusions,
       dropNewItem: dropNewItem,
       createItemIndex: createItemIndex,
       processItems: processItems,
@@ -1181,6 +1182,10 @@
         service.hasNewItems = (newItems.size !== 0);
         saveNewItems(newItems);
       });
+    }
+
+    function clearInfusions() {
+      _infusions = [];
     }
 
     function clearNewItems() {
