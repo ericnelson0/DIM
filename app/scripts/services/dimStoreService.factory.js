@@ -595,14 +595,6 @@
       }
 
       try {
-        if (dimSettingsService.trackInfusion && createdItem.isNew === false && lightLevelChanged(createdItem, previousItems)) {
-          _infusions
-        }
-      } catch (e) {
-        console.error("Error determining LL difference of " + createdItem.name, item, itemDef, e);
-      }
-
-      try {
         createdItem.talentGrid = buildTalentGrid(item, talentDefs, progressDefs);
       } catch (e) {
         console.error("Error building talent grid for " + createdItem.name, item, itemDef, e);
@@ -612,6 +604,19 @@
       } catch (e) {
         console.error("Error building stats for " + createdItem.name, item, itemDef, e);
       }
+
+      try {
+        //dimSettingsService.trackInfusion
+        if (true && createdItem.isNew === false &&
+            createdItem.primStat && createdItem.primStat.statHash === 3897883278 && // defense hash
+            lightLevelChanged(createdItem, previousItems)) {
+              var statsObj = getStatsObj(createdItem);
+              _infusions.push({old: previousItems.get(createdItem.id), new: statsObj});
+        }
+      } catch (e) {
+        console.error("Error determining LL difference of " + createdItem.name, item, itemDef, e);
+      }
+
       try {
         createdItem.objectives = buildObjectives(item.objectives, objectiveDef);
       } catch (e) {
@@ -1117,8 +1122,9 @@
     }
 
     /** New Item Tracking **/
-    function getStats(item) {
+    function getStatsObj(item) {
       return {
+        light: item.primStat.value,
         intBase: item.stats[0].base,
         intBonus: item.stats[0].bonus,
         disBase: item.stats[1].base,
@@ -1132,12 +1138,8 @@
       var itemMap = new Map();
       stores.forEach((store) => {
         store.items.forEach((item) => {
-          // has defense hash
-          if (item.primStat && item.primStat.statHash === 3897883278) {
-            var statsObj = getStats(item);
-            statsObj.id = item.id;
-            itemMap.set(statsObj);
-          }
+          var statsObj = (item.primStat && item.primStat.statHash === 3897883278)? getStatsObj(item) : {};
+          itemMap.set(item.id, statsObj);
         });
       });
       return itemMap;
@@ -1162,8 +1164,8 @@
     }
 
     function lightLevelChanged(createdItem, previousItems) {
-      var prev = _.findWhere(previousItems, {id: createItem.id});
-      return prev.primStat.value !== createItem.primStat.value;
+      var prev = previousItems.get(createdItem.id);
+      return prev && prev.light !== createdItem.primStat.value;
     }
 
     function dropNewItem(item) {
@@ -1207,7 +1209,7 @@
       return 'newItems-' + (platform ? platform.type : '');
     }
 
-    function processItems(owner, items, previousItems = new Set(), newItems = new Set()) {
+    function processItems(owner, items, previousItems = new Map(), newItems = new Set()) {
       _idTracker = {};
       return $q.all([
         dimItemDefinitions,
