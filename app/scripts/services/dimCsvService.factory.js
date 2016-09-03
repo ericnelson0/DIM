@@ -168,6 +168,16 @@
       downloadCsv("destinyWeapons", header + data);
     }
 
+    function downloadInfusion(infusionList) {
+      var data = '';
+      _.each(infusionList, function(infusion) {
+        data += _.map(_.values(infusion.old), function(val) { return val.toString(); }).join(',');
+        data += ',';
+        data += _.map(_.values(infusion.new), function(val) { return val.toString(); }).join(',');
+      });
+      downloadCsv("destinyInfusions", data);
+    }
+
     function downloadCsvFiles(stores, type) {
       // perhaps we're loading
       if (stores.length === 0){
@@ -209,6 +219,7 @@
     }
 
     return {
+      downloadInfusion: downloadInfusion,
       downloadCsvFiles: downloadCsvFiles
     };
   }

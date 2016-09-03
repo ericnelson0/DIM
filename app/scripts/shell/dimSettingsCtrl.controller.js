@@ -26,6 +26,10 @@
       SyncService.authorize();
     };
 
+    vm.downloadInfusionCsv = function(){
+      dimCsvService.downloadInfusion(dimStoreService.getInfusions());
+    };
+
     vm.downloadWeaponCsv = function(){
       dimCsvService.downloadCsvFiles(dimStoreService.getStores(), "Weapons");
       _gaq.push(['_trackEvent', 'Download CSV', 'Weapons']);

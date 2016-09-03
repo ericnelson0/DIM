@@ -130,6 +130,7 @@
     var service = {
       getActiveStore: getActiveStore,
       getStores: getStores,
+      getInfusions: getInfusions,
       reloadStores: reloadStores,
       getStore: getStore,
       getStatsData: getStatsData,
@@ -175,6 +176,10 @@
 
     function getStores() {
       return _stores;
+    }
+
+    function getInfusions() {
+      return _infusions;
     }
 
     // Returns a promise for a fresh view of the stores and their items.
