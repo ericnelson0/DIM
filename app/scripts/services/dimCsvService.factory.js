@@ -175,6 +175,7 @@
         data += _.map(_.values(infusion.old), function(val) { return val.toString(); }).join(',');
         data += ',';
         data += _.map(_.values(infusion.new), function(val) { return val.toString(); }).join(',');
+        data += '\n';
       });
       downloadCsv("destinyInfusions", data);
     }
