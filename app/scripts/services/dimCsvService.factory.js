@@ -171,6 +171,7 @@
     function downloadInfusion(infusionList) {
       var data = '';
       _.each(infusionList, function(infusion) {
+        data += (infusion.type + ','),
         data += _.map(_.values(infusion.old), function(val) { return val.toString(); }).join(',');
         data += ',';
         data += _.map(_.values(infusion.new), function(val) { return val.toString(); }).join(',');

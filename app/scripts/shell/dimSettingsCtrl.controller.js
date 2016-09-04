@@ -3,9 +3,9 @@
 
   angular.module('dimApp').controller('dimSettingsCtrl', SettingsController);
 
-  SettingsController.$inject = ['dimSettingsService', '$scope', 'SyncService', 'dimCsvService', 'dimStoreService'];
+  SettingsController.$inject = ['dimSettingsService', 'dimInfoService', '$scope', 'SyncService', 'dimCsvService', 'dimStoreService'];
 
-  function SettingsController(settings, $scope, SyncService, dimCsvService, dimStoreService) {
+  function SettingsController(settings, dimInfoService, $scope, SyncService, dimCsvService, dimStoreService) {
     var vm = this;
 
     $scope.$watchCollection('vm.settings', function() {
@@ -27,7 +27,17 @@
     };
 
     vm.downloadInfusionCsv = function(){
-      dimCsvService.downloadInfusion(dimStoreService.getInfusions());
+      var infusions = dimStoreService.getInfusions();
+      if (infusions.length) {
+        dimCsvService.downloadInfusion(infusions);
+        dimStoreService.clearInfusions();
+      } else {
+        dimInfoService.show('noinfusions', {
+          type: 'warning',
+          title: 'No Infusions',
+          body: 'There are no infusions that are currently saved.',
+        });
+      }
     };
 
     vm.downloadWeaponCsv = function(){

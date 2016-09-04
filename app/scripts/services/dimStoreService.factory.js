@@ -617,7 +617,7 @@
             createdItem.primStat && createdItem.primStat.statHash === 3897883278 && // defense hash
             lightLevelChanged(createdItem, previousItems)) {
               var statsObj = getStatsObj(createdItem);
-              _infusions.push({old: previousItems.get(createdItem.id), new: statsObj});
+              _infusions.push({old: previousItems.get(createdItem.id), new: statsObj, type: createdItem.type});
         }
       } catch (e) {
         console.error("Error determining LL difference of " + createdItem.name, item, itemDef, e);
