@@ -5,9 +5,10 @@
     .factory('dimLoadoutService', LoadoutService);
 
 
-  LoadoutService.$inject = ['$q', '$rootScope', 'uuid2', 'dimItemService', 'dimStoreService', 'toaster', 'loadingTracker', 'dimPlatformService', 'SyncService', 'dimActionQueue'];
-  function LoadoutService($q, $rootScope, uuid2, dimItemService, dimStoreService, toaster, loadingTracker, dimPlatformService, SyncService, dimActionQueue) {
+  LoadoutService.$inject = ['$q', '$rootScope', 'uuid2', 'dimItemService', 'dimStoreService', 'toaster', 'loadingTracker', 'dimPlatformService', 'SyncService', 'dimActionQueue', '$filter'];
+  function LoadoutService($q, $rootScope, uuid2, dimItemService, dimStoreService, toaster, loadingTracker, dimPlatformService, SyncService, dimActionQueue, $filter) {
     var _loadouts = [];
+    var _previousLoadouts = {}; // by character ID
 
     return {
       dialogOpen: false,
@@ -16,7 +17,7 @@
       saveLoadout: saveLoadout,
       addItemToLoadout: addItemToLoadout,
       applyLoadout: applyLoadout,
-      previousLoadouts: {} // by character ID
+      previousLoadouts: _previousLoadouts
     };
 
     function addItemToLoadout(item, $event) {
@@ -180,19 +181,35 @@
     }
 
     // A special getItem that takes into account the fact that
-    // subclasses have unique IDs.
+    // subclasses have unique IDs, and emblems/shaders/etc are interchangeable.
     function getLoadoutItem(pseudoItem, store) {
       var item = dimItemService.getItem(pseudoItem);
-      if (item.type === 'Class') {
+      if (_.contains(['Class', 'Shader', 'Emblem', 'Emote', 'Ship', 'Horn'], item.type)) {
         item = _.find(store.items, {
           hash: pseudoItem.hash
-        });
+        }) || item;
       }
       return item;
     }
 
-    function applyLoadout(store, loadout) {
+    function applyLoadout(store, loadout, allowUndo = false) {
       return dimActionQueue.queueAction(function() {
+        if (allowUndo) {
+          if (!_previousLoadouts[store.id]) {
+            _previousLoadouts[store.id] = [];
+          }
+
+          if (!store.isVault) {
+            const lastPreviousLoadout = _.last(_previousLoadouts[store.id]);
+            if (lastPreviousLoadout && loadout.id === lastPreviousLoadout.id) {
+              _previousLoadouts[store.id].pop();
+            } else {
+              const previousLoadout = store.loadoutFromCurrentlyEquipped($filter('translate')('before_loadout', { name: loadout.name }));
+              _previousLoadouts[store.id].push(previousLoadout);
+            }
+          }
+        }
+
         var items = angular.copy(_.flatten(_.values(loadout.items)));
         var totalItems = items.length;
 

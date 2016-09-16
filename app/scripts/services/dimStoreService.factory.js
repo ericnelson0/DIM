@@ -4,9 +4,9 @@
   angular.module('dimApp')
     .factory('dimStoreService', StoreService);
 
-  StoreService.$inject = ['$rootScope', '$q', 'dimBungieService', 'dimPlatformService', 'dimSettingsService', 'dimCategory', 'dimItemDefinitions', 'dimVendorDefinitions', 'dimBucketService', 'dimStatDefinitions', 'dimObjectiveDefinitions', 'dimTalentDefinitions', 'dimSandboxPerkDefinitions', 'dimYearsDefinitions', 'dimProgressionDefinitions', 'dimRecordsDefinitions', 'dimItemCategoryDefinitions', 'dimClassDefinitions', 'dimRaceDefinitions', 'dimFactionDefinitions', 'dimItemInfoService', 'dimInfoService', 'SyncService', 'loadingTracker', 'dimManifestService', '$translate'];
+  StoreService.$inject = ['$rootScope', '$q', 'dimBungieService', 'dimPlatformService', 'dimSettingsService', 'dimCategory', 'dimItemDefinitions', 'dimVendorDefinitions', 'dimBucketService', 'dimStatDefinitions', 'dimObjectiveDefinitions', 'dimTalentDefinitions', 'dimSandboxPerkDefinitions', 'dimYearsDefinitions', 'dimProgressionDefinitions', 'dimRecordsDefinitions', 'dimItemCategoryDefinitions', 'dimClassDefinitions', 'dimRaceDefinitions', 'dimFactionDefinitions', 'dimItemInfoService', 'dimInfoService', 'SyncService', 'loadingTracker', 'dimManifestService', '$translate', 'uuid2'];
 
-  function StoreService($rootScope, $q, dimBungieService, dimPlatformService, dimSettingsService, dimCategory, dimItemDefinitions, dimVendorDefinitions, dimBucketService, dimStatDefinitions, dimObjectiveDefinitions, dimTalentDefinitions, dimSandboxPerkDefinitions, dimYearsDefinitions, dimProgressionDefinitions, dimRecordsDefinitions, dimItemCategoryDefinitions, dimClassDefinitions, dimRaceDefinitions, dimFactionDefinitions, dimItemInfoService, dimInfoService, SyncService, loadingTracker, dimManifestService, $translate) {
+  function StoreService($rootScope, $q, dimBungieService, dimPlatformService, dimSettingsService, dimCategory, dimItemDefinitions, dimVendorDefinitions, dimBucketService, dimStatDefinitions, dimObjectiveDefinitions, dimTalentDefinitions, dimSandboxPerkDefinitions, dimYearsDefinitions, dimProgressionDefinitions, dimRecordsDefinitions, dimItemCategoryDefinitions, dimClassDefinitions, dimRaceDefinitions, dimFactionDefinitions, dimItemInfoService, dimInfoService, SyncService, loadingTracker, dimManifestService, $translate, uuid2) {
     var _stores = [];
     var _infusions = [];
     var _idTracker = {};
@@ -81,8 +81,8 @@
         this.level = characterInfo.characterLevel;
         this.percentToNextLevel = characterInfo.percentToNextLevel / 100.0;
         this.powerLevel = characterInfo.characterBase.powerLevel;
-        this.background = 'https://bungie.net/' + characterInfo.backgroundPath;
-        this.icon = 'https://bungie.net/' + characterInfo.emblemPath;
+        this.background = 'https://www.bungie.net/' + characterInfo.backgroundPath;
+        this.icon = 'https://www.bungie.net/' + characterInfo.emblemPath;
         this.stats = getStatsData(statDefs, characterInfo.characterBase);
       },
       // Remove an item from this store. Returns whether it actually removed anything.
@@ -114,6 +114,20 @@
           });
         }
         item.owner = this.id;
+      },
+      // Create a loadout from this store's equipped items
+      loadoutFromCurrentlyEquipped: function(name) {
+        return {
+          id: uuid2.newguid(),
+          classType: -1,
+          name: name,
+          items: _(this.items)
+            .chain()
+            .select((item) => item.canBeInLoadout())
+            .map((i) => angular.copy(i))
+            .groupBy((i) => i.type.toLowerCase())
+            .value()
+        };
       }
     };
 
@@ -364,7 +378,7 @@
 
               store = angular.extend(Object.create(StoreProto), {
                 id: raw.id,
-                icon: 'https://bungie.net/' + character.emblemPath,
+                icon: 'https://www.bungie.net/' + character.emblemPath,
                 current: lastPlayedDate.getTime() === (new Date(character.characterBase.dateLastPlayed)).getTime(),
                 lastPlayed: character.characterBase.dateLastPlayed,
                 background: 'https://bungie.net/' + character.backgroundPath,
