@@ -685,12 +685,11 @@
       }
 
       try {
-        //dimSettingsService.trackInfusion
         if (true && createdItem.isNew === false &&
             createdItem.primStat && createdItem.primStat.statHash === 3897883278 && // defense hash
             lightLevelChanged(createdItem, previousItems)) {
-              var statsObj = getStatsObj(createdItem);
-              _infusions.push({old: previousItems.get(createdItem.id), new: statsObj, type: createdItem.type});
+          var statsObj = getStatsObj(createdItem);
+          _infusions.push({ old: previousItems.get(createdItem.id), new: statsObj, type: createdItem.type });
         }
       } catch (e) {
         console.error("Error determining LL difference of " + createdItem.name, item, itemDef, e);
@@ -1217,14 +1216,14 @@
         disBonus: item.stats[1].bonus,
         strBase: item.stats[2].base,
         strBonus: item.stats[2].bonus,
-      }
+      };
     }
 
     function buildItemMap(stores) {
       var itemMap = new Map();
       stores.forEach((store) => {
         store.items.forEach((item) => {
-          var statsObj = (item.primStat && item.primStat.statHash === 3897883278)? getStatsObj(item) : {};
+          var statsObj = (item.primStat && item.primStat.statHash === 3897883278) ? getStatsObj(item) : {};
           itemMap.set(item.id, statsObj);
         });
       });
