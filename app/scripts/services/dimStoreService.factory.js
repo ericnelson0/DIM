@@ -207,6 +207,15 @@
       return _infusions;
     }
 
+    function loadStores(activePlatform, includeVendors) {
+      if (includeVendors) {
+        return $q.when(dimVendorDefinitions).then(function(vendorDefs) {
+          return dimBungieService.getStores(activePlatform, includeVendors, vendorDefs);
+        });
+      }
+      return dimBungieService.getStores(activePlatform, includeVendors);
+    }
+
     // Returns a promise for a fresh view of the stores and their items.
     // If this is called while a reload is already happening, it'll return the promise
     // for the ongoing reload rather than kicking off a new reload.
@@ -245,7 +254,7 @@
                               loadNewItems(activePlatform),
                               dimItemInfoService(activePlatform),
                               $translate(['Vault']),
-                              dimBungieService.getStores(dimPlatformService.getActive(), includeVendors)])
+                              loadStores(activePlatform, includeVendors)])
         .then(function([progressionDefs, factionDefs, buckets, classes, races, statDefs, newItems, itemInfoService, translations, rawStores]) {
           console.timeEnd('Load stores (Bungie API)');
           if (activePlatform !== dimPlatformService.getActive()) {
@@ -523,24 +532,28 @@
     function processSingleItem(definitions, buckets, statDef, objectiveDef, perkDefs, talentDefs, yearsDefs, progressDefs, recordsDefs, itemCategories, previousItems, newItems, itemInfoService, item, owner) {
       var itemDef = definitions[item.itemHash];
       // Missing definition?
-      if (!itemDef || itemDef.itemName === 'Classified') {
+      if (!itemDef) {
         // maybe it is classified...
         itemDef = {
-          classified: true,
-          icon: '/img/misc/missing_icon.png'
+          itemName: "Missing Item",
+          redacted: true
         };
-
-        // unidentified item.
-        if (!itemDef.itemName) {
-          if (!itemDef) {
-            dimManifestService.warnMissingDefinition();
-          }
-          console.warn('Missing Item Definition:\n\n', item, '\n\nplease contact a developer to get this item added.');
-          window.onerror("Missing Item Definition - " + JSON.stringify(_.pick(item, 'canEquip', 'cannotEquipReason', 'equipRequiredLevel', 'isEquipment', 'itemHash', 'location', 'stackSize', 'talentGridHash')), 'dimStoreService.factory.js', 491, 11);
-        }
+        dimManifestService.warnMissingDefinition();
       }
 
-      if (!itemDef.itemTypeName || !itemDef.itemName) {
+      if (!itemDef.icon) {
+        itemDef.icon = '/img/misc/missing_icon.png';
+      }
+
+      if (!itemDef.itemTypeName) {
+        itemDef.itemTypeName = 'Unknown';
+      }
+
+      if (itemDef.redacted) {
+        console.warn('Missing Item Definition:\n\n', item, '\n\nplease contact a developer to get this item added.');
+      }
+
+      if (!itemDef.itemName) {
         return null;
       }
 
@@ -583,10 +596,10 @@
 
       var itemType = normalBucket.type;
 
-      const categories = _.compact(itemDef.itemCategoryHashes.map((c) => {
+      const categories = itemDef.itemCategoryHashes ? _.compact(itemDef.itemCategoryHashes.map((c) => {
         const category = itemCategories[c];
         return category ? category.identifier : null;
-      }));
+      })) : [];
 
       var dmgName = [null, 'kinetic', 'arc', 'solar', 'void'][item.damageType];
 
@@ -602,6 +615,7 @@
         tier: tiers[itemDef.tierType] || 'Common',
         isExotic: tiers[itemDef.tierType] === 'Exotic',
         isVendorItem: (!owner || owner.id === null),
+        isUnlocked: (!owner || owner.id === null) ? item.isUnlocked : true,
         name: itemDef.itemName,
         description: itemDef.itemDescription || '', // Added description for Bounties for now JFLAY2015
         icon: itemDef.icon,
@@ -629,10 +643,15 @@
         trackable: currentBucket.inProgress && currentBucket.hash !== 375726501,
         tracked: item.state === 2,
         locked: item.locked,
-        classified: itemDef.classified
+        classified: itemDef.redacted
       });
 
       createdItem.index = createItemIndex(createdItem);
+
+      // Moving rare masks destroys them
+      if (createdItem.inCategory('CATEGORY_MASK') && createdItem.tier !== 'Legendary') {
+        createdItem.notransfer = true;
+      }
 
       if (createdItem.primStat) {
         createdItem.primStat.stat = statDef[createdItem.primStat.statHash];
@@ -844,7 +863,9 @@
           // itemNode: node
         };
       });
-      gridNodes = _.compact(gridNodes);
+
+      // We need to unique-ify because Ornament nodes show up twice!
+      gridNodes = _.uniq(_.compact(gridNodes), false, 'hash');
 
       // This can be handy for visualization/debugging
       // var columns = _.groupBy(gridNodes, 'column');
@@ -1182,6 +1203,10 @@
       })), 'sort');
     }
 
+    function isSaleItemUnlocked(saleItem) {
+      return _.every(saleItem.unlockStatuses, function(status) { return status.isSet; });
+    }
+
     /** New Item Tracking **/
     function getStatsObj(item) {
       return {
@@ -1357,36 +1382,57 @@
             vendor.vendorIcon = def.factionIcon || def.vendorIcon;
             vendor.items = [];
             vendor.costs = [];
+            vendor.hasArmorWeaps = false;
+            vendor.hasVehicles = false;
+            vendor.hasShadersEmbs = false;
+            vendor.hasEmotes = false;
             if (vendor.enabled) {
               var items = [];
               _.each(vendor.saleItemCategories, function(categoryData) {
                 var filteredSaleItems = _.filter(categoryData.saleItems, function(saleItem) {
-                  return saleItem.item.isEquipment && saleItem.costs.length;
+                  saleItem.item.isUnlocked = isSaleItemUnlocked(saleItem);
+                  return saleItem.item.isEquipment;
                 });
                 items.push(...filteredSaleItems);
               });
               vendor.items = _.pluck(items, 'item');
-
-              var costs = _.reduce(items, function(o, saleItem) {
-                o[saleItem.item.itemHash] = {
-                  cost: saleItem.costs[0].value,
-                  currency: _.pick(itemDefs[saleItem.costs[0].itemHash], 'itemName', 'icon', 'itemHash')
-                };
+              vendor.costs = _.reduce(items, function(o, saleItem) {
+                if (saleItem.costs.length) {
+                  o[saleItem.item.itemHash] = {
+                    cost: saleItem.costs[0].value,
+                    currency: _.pick(itemDefs[saleItem.costs[0].itemHash], 'itemName', 'icon', 'itemHash')
+                  };
+                }
                 return o;
               }, {});
-              vendor.costs = costs;
             }
             return processItems({ id: null }, vendor.items)
               .then(function(items) {
+                vendor.items = { armor: [], weapons: [], ships: [], vehicles: [], shaders: [], emblems: [], emotes: [] };
                 _.each(items, function(item) {
                   item.vendorIcon = vendor.vendorIcon;
-                });
-                vendor.items = {};
-                vendor.items.armor = _.filter(items, function(item) {
-                  return item.primStat && item.primStat.statHash === 3897883278 && item.primStat.value >= 280;
-                });
-                vendor.items.weapons = _.filter(items, function(item) {
-                  return item.primStat && item.primStat.statHash === 368428387 && item.primStat.value >= 280;
+                  if (item.primStat && item.primStat.statHash === 3897883278) {
+                    vendor.hasArmorWeaps = true;
+                    vendor.items.armor.push(item);
+                  } else if (item.primStat && item.primStat.statHash === 368428387) {
+                    vendor.hasArmorWeaps = true;
+                    vendor.items.weapons.push(item);
+                  } else if (item.primStat && item.primStat.statHash === 1501155019) {
+                    vendor.hasVehicles = true;
+                    vendor.items.vehicles.push(item);
+                  } else if (item.type === "Ship") {
+                    vendor.hasVehicles = true;
+                    vendor.items.ships.push(item);
+                  } else if (item.type === "Emblem") {
+                    vendor.hasShadersEmbs = true;
+                    vendor.items.emblems.push(item);
+                  } else if (item.type === "Shader") {
+                    vendor.hasShadersEmbs = true;
+                    vendor.items.shaders.push(item);
+                  } else if (item.type === "Emote") {
+                    vendor.hasEmotes = true;
+                    vendor.items.emotes.push(item);
+                  }
                 });
                 return vendor;
               });
