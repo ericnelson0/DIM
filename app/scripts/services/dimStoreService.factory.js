@@ -686,6 +686,7 @@
 
       try {
         if (true && createdItem.isNew === false &&
+            createdItem.stats && createdItem.stats.length &&
             createdItem.primStat && createdItem.primStat.statHash === 3897883278 && // defense hash
             lightLevelChanged(createdItem, previousItems)) {
           var statsObj = getStatsObj(createdItem);
@@ -1223,7 +1224,7 @@
       var itemMap = new Map();
       stores.forEach((store) => {
         store.items.forEach((item) => {
-          var statsObj = (item.primStat && item.primStat.statHash === 3897883278) ? getStatsObj(item) : {};
+          var statsObj = (item.stats && item.stats.length && item.primStat && item.primStat.statHash === 3897883278) ? getStatsObj(item) : {};
           itemMap.set(item.id, statsObj);
         });
       });
