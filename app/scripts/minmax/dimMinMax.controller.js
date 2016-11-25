@@ -612,16 +612,12 @@
 
           var allItems = [];
           var vendorItems = [];
-          var hasFelwinter = false;
           _.each(stores, function(store) {
             var items = filterItems(store.items);
 
             // Exclude felwinter if we have one
-            var felwinter = _.findWhere(items, { hash: 2672107540 });
-            if (!hasFelwinter && felwinter) {
-              hasFelwinter = true;
-              vm.excludeditems.push(felwinter);
-            }
+            var allFelwinters = _.filter(items, function(item) { return item.hash === 2672107540; });
+            vm.excludeditems = vm.excludeditems.concat(allFelwinters);
 
             allItems = allItems.concat(items);
 
