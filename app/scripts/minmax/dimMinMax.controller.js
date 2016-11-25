@@ -615,9 +615,11 @@
           _.each(stores, function(store) {
             var items = filterItems(store.items);
 
-            // Exclude felwinter if we have one
-            var allFelwinters = _.filter(items, function(item) { return item.hash === 2672107540; });
-            vm.excludeditems = vm.excludeditems.concat(allFelwinters);
+            // Exclude felwinters if we have them
+            var felwinters = _.filter(items, { hash: 2672107540 });
+            if (felwinters.length) {
+              vm.excludeditems.push(...felwinters);
+            }
 
             allItems = allItems.concat(items);
 
